@@ -17,6 +17,7 @@ from backend.core.conf import settings
 from backend.utils.encrypt import AESCipher, ItsDCipher, Md5Cipher
 from backend.utils.request_parse import parse_ip_info, parse_user_agent_info
 from backend.utils.timezone import timezone
+from backend.utils.trace_id import get_request_trace_id
 
 
 class OperaLogMiddleware(BaseHTTPMiddleware):
@@ -25,7 +26,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         # 排除记录白名单
         path = request.url.path
-        if path in settings.OPERA_LOG_EXCLUDE or not path.startswith(f'{settings.API_V1_STR}'):
+        if path in settings.OPERA_LOG_PATH_EXCLUDE or not path.startswith(f'{settings.FASTAPI_API_V1_PATH}'):
             return await call_next(request)
 
         # 请求解析
@@ -52,7 +53,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
 
         # 执行请求
         start_time = timezone.now()
-        res = await self.execute_request(request, call_next)
+        request_next = await self.execute_request(request, call_next)
         end_time = timezone.now()
         cost_time = (end_time - start_time).total_seconds() * 1000.0
 
@@ -62,6 +63,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
 
         # 日志创建
         opera_log_in = CreateOperaLogParam(
+            trace_id=get_request_trace_id(request),
             username=username,
             method=method,
             title=summary,
@@ -75,20 +77,20 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             browser=request.state.browser,
             device=request.state.device,
             args=args,
-            status=res.status,
-            code=res.code,
-            msg=res.msg,
+            status=request_next.status,
+            code=request_next.code,
+            msg=request_next.msg,
             cost_time=cost_time,
             opera_time=start_time,
         )
         create_task(OperaLogService.create(obj_in=opera_log_in))  # noqa: ignore
 
         # 错误抛出
-        err = res.err
+        err = request_next.err
         if err:
             raise err from None
 
-        return res.response
+        return request_next.response
 
     async def execute_request(self, request: Request, call_next) -> RequestCallNext:
         """执行请求"""
@@ -99,9 +101,9 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         response = None
         try:
             response = await call_next(request)
+            code, msg = self.request_exception_handler(request, code, msg)
         except Exception as e:
-            log.exception(e)
-            code, msg = await self.request_exception_handler(request, code, msg)
+            log.error(f'请求异常: {e}')
             # code 处理包含 SQLAlchemy 和 Pydantic
             code = getattr(e, 'code', None) or code
             msg = getattr(e, 'msg', None) or msg
@@ -111,23 +113,24 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         return RequestCallNext(code=str(code), msg=msg, status=status, err=err, response=response)
 
     @staticmethod
-    @sync_to_async
     def request_exception_handler(request: Request, code: int, msg: str) -> tuple[str, str]:
         """请求异常处理器"""
-        try:
-            http_exception = request.state.__request_http_exception__
-        except AttributeError:
-            pass
-        else:
-            code = http_exception.get('code', 500)
-            msg = http_exception.get('msg', 'Internal Server Error')
-        try:
-            validation_exception = request.state.__request_validation_exception__
-        except AttributeError:
-            pass
-        else:
-            code = validation_exception.get('code', 400)
-            msg = validation_exception.get('msg', 'Bad Request')
+        exception_states = [
+            '__request_http_exception__',
+            '__request_validation_exception__',
+            '__request_pydantic_user_error__',
+            '__request_assertion_error__',
+            '__request_custom_exception__',
+            '__request_all_unknown_exception__',
+            '__request_cors_500_exception__',
+        ]
+        for state in exception_states:
+            exception = getattr(request.state, state, None)
+            if exception:
+                code = exception.get('code')
+                msg = exception.get('msg')
+                log.error(f'请求异常: {msg}')
+                break
         return code, msg
 
     @staticmethod
@@ -165,23 +168,23 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         if not args:
             args = None
         else:
-            match settings.OPERA_LOG_ENCRYPT:
+            match settings.OPERA_LOG_ENCRYPT_TYPE:
                 case OperaLogCipherType.aes:
                     for key in args.keys():
-                        if key in settings.OPERA_LOG_ENCRYPT_INCLUDE:
+                        if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
                             args[key] = (AESCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(args[key])).hex()
                 case OperaLogCipherType.md5:
                     for key in args.keys():
-                        if key in settings.OPERA_LOG_ENCRYPT_INCLUDE:
+                        if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
                             args[key] = Md5Cipher.encrypt(args[key])
                 case OperaLogCipherType.itsdangerous:
                     for key in args.keys():
-                        if key in settings.OPERA_LOG_ENCRYPT_INCLUDE:
+                        if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
                             args[key] = ItsDCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(args[key])
                 case OperaLogCipherType.plan:
                     pass
                 case _:
                     for key in args.keys():
-                        if key in settings.OPERA_LOG_ENCRYPT_INCLUDE:
+                        if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
                             args[key] = '******'
         return args

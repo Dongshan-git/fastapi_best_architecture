@@ -6,7 +6,7 @@ from asgiref.sync import sync_to_async
 from fastapi import Depends, Request
 from fastapi.security import HTTPBearer
 from fastapi.security.utils import get_authorization_scheme_param
-from jose import jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -109,7 +109,7 @@ async def create_new_token(sub: str, token: str, refresh_token: str, multi_login
     new_refresh_token = await create_refresh_token(sub, multi_login)
 
     token_key = f'{settings.TOKEN_REDIS_PREFIX}:{sub}:{token}'
-    refresh_token_key = f'{settings.TOKEN_REDIS_PREFIX}:{sub}:{refresh_token}'
+    refresh_token_key = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{sub}:{refresh_token}'
     await redis_client.delete(token_key)
     await redis_client.delete(refresh_token_key)
     return NewToken(
@@ -146,9 +146,9 @@ def jwt_decode(token: str) -> int:
         user_id = int(payload.get('sub'))
         if not user_id:
             raise TokenError(msg='Token 无效')
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise TokenError(msg='Token 已过期')
-    except (jwt.JWTError, Exception):
+    except (JWTError, Exception):
         raise TokenError(msg='Token 无效')
     return user_id
 
