@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 from fastapi_limiter.depends import RateLimiter
 from fastapi_oauth20 import FastAPIOAuth20, LinuxDoOAuth20
 from starlette.responses import RedirectResponse
@@ -21,7 +21,7 @@ _linux_do_oauth2 = FastAPIOAuth20(_linux_do_client, admin_settings.OAUTH2_LINUX_
 
 @router.get('', summary='获取 Linux Do 授权链接')
 async def linux_do_auth2() -> ResponseModel:
-    auth_url = await _linux_do_client.get_authorization_url(redirect_uri=admin_settings.OAUTH2_GITHUB_REDIRECT_URI)
+    auth_url = await _linux_do_client.get_authorization_url(redirect_uri=admin_settings.OAUTH2_LINUX_DO_REDIRECT_URI)
     return response_base.success(data=auth_url)
 
 
@@ -32,13 +32,17 @@ async def linux_do_auth2() -> ResponseModel:
     dependencies=[Depends(RateLimiter(times=5, minutes=1))],
 )
 async def linux_do_login(
-    request: Request, background_tasks: BackgroundTasks, oauth2: FastAPIOAuth20 = Depends(_linux_do_oauth2)
+    request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    oauth2: FastAPIOAuth20 = Depends(_linux_do_oauth2),
 ):
     token, _state = oauth2
     access_token = token['access_token']
     user = await _linux_do_client.get_userinfo(access_token)
     data = await oauth2_service.create_with_login(
         request=request,
+        response=response,
         background_tasks=background_tasks,
         user=user,
         social=UserSocialType.linuxdo,

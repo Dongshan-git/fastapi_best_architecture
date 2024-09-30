@@ -22,7 +22,12 @@ from backend.utils.timezone import timezone
 class OAuth2Service:
     @staticmethod
     async def create_with_login(
-        *, request: Request, response: Response, background_tasks: BackgroundTasks, user: dict, social: UserSocialType
+        *,
+        request: Request,
+        response: Response,
+        background_tasks: BackgroundTasks,
+        user: dict,
+        social: UserSocialType,
     ) -> GetLoginToken | None:
         async with async_db_session.begin() as db:
             # 获取 OAuth2 平台用户信息
@@ -50,19 +55,21 @@ class OAuth2Service:
                 await db.flush()
                 sys_user = await user_dao.check_email(db, _email)
             # 绑定社交用户
-            user_social = await user_social_dao.get(db, sys_user.id, social.value)
+            sys_user_id = sys_user.id
+            user_social = await user_social_dao.get(db, sys_user_id, social.value)
             if not user_social:
-                new_user_social = CreateUserSocialParam(source=social.value, uid=str(_id), user_id=sys_user.id)
+                new_user_social = CreateUserSocialParam(source=social.value, uid=str(_id), user_id=sys_user_id)
                 await user_social_dao.create(db, new_user_social)
             # 创建 token
-            access_token = await jwt.create_access_token(str(sys_user.id), sys_user.is_multi_login)
-            refresh_token = await jwt.create_refresh_token(str(sys_user.id), multi_login=sys_user.is_multi_login)
+            access_token = await jwt.create_access_token(str(sys_user_id), sys_user.is_multi_login)
+            refresh_token = await jwt.create_refresh_token(str(sys_user_id), multi_login=sys_user.is_multi_login)
             await user_dao.update_login_time(db, sys_user.username)
             await db.refresh(sys_user)
             login_log = dict(
                 db=db,
                 request=request,
-                user=sys_user,
+                user_uuid=sys_user.uuid,
+                username=sys_user.username,
                 login_time=timezone.now(),
                 status=LoginLogStatusType.success.value,
                 msg='登录成功（OAuth2）',
