@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from fast_captcha import text_captcha
+import bcrypt
+
 from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -70,8 +71,8 @@ class CRUDUser(CRUDPlus[User]):
         :return:
         """
         if not social:
-            salt = text_captcha(5)
-            obj.password = get_hash_password(f'{obj.password}{salt}')
+            salt = bcrypt.gensalt()
+            obj.password = get_hash_password(f'{obj.password}', salt)
             dict_obj = obj.model_dump()
             dict_obj.update({'is_staff': True, 'salt': salt})
         else:
@@ -88,8 +89,8 @@ class CRUDUser(CRUDPlus[User]):
         :param obj:
         :return:
         """
-        salt = text_captcha(5)
-        obj.password = get_hash_password(f'{obj.password}{salt}')
+        salt = bcrypt.gensalt()
+        obj.password = get_hash_password(f'{obj.password}', salt)
         dict_obj = obj.model_dump(exclude={'roles'})
         dict_obj.update({'salt': salt})
         new_user = self.model(**dict_obj)
@@ -183,8 +184,13 @@ class CRUDUser(CRUDPlus[User]):
         """
         stmt = (
             select(self.model)
-            .options(selectinload(self.model.dept))
-            .options(selectinload(self.model.roles).selectinload(Role.menus))
+            .options(
+                selectinload(self.model.dept),
+                selectinload(self.model.roles).options(
+                    selectinload(Role.menus),
+                    selectinload(Role.rules),
+                ),
+            )
             .order_by(desc(self.model.join_time))
         )
         where_list = []
@@ -290,17 +296,19 @@ class CRUDUser(CRUDPlus[User]):
 
     async def get_with_relation(self, db: AsyncSession, *, user_id: int = None, username: str = None) -> User | None:
         """
-        获取用户和（部门，角色，菜单）
+        获取用户和（部门，角色，菜单，规则）
 
         :param db:
         :param user_id:
         :param username:
         :return:
         """
-        stmt = (
-            select(self.model)
-            .options(selectinload(self.model.dept))
-            .options(selectinload(self.model.roles).joinedload(Role.menus))
+        stmt = select(self.model).options(
+            selectinload(self.model.dept),
+            selectinload(self.model.roles).options(
+                selectinload(Role.menus),
+                selectinload(Role.rules),
+            ),
         )
         filters = []
         if user_id:

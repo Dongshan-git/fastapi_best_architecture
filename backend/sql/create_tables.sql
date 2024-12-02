@@ -1,4 +1,10 @@
--- sys_api: table
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for sys_api
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_api`;
 CREATE TABLE `sys_api`
 (
     `id`           int          NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -15,7 +21,10 @@ CREATE TABLE `sys_api`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_casbin_rule: table
+-- ----------------------------
+-- Table structure for sys_casbin_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_casbin_rule`;
 CREATE TABLE `sys_casbin_rule`
 (
     `id`    int          NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -32,7 +41,54 @@ CREATE TABLE `sys_casbin_rule`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_dept: table
+-- ----------------------------
+-- Table structure for sys_config
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_config`;
+CREATE TABLE `sys_config`
+(
+    `id`           int         NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `name`         varchar(20) NOT NULL COMMENT '名称',
+    `type`         varchar(20) DEFAULT NULL COMMENT '类型',
+    `key`          varchar(50) NOT NULL COMMENT '键名',
+    `value`        longtext    NOT NULL COMMENT '键值',
+    `is_frontend`  tinyint(1)  NOT NULL COMMENT '是否前端',
+    `remark`       longtext COMMENT '备注',
+    `created_time` datetime    NOT NULL COMMENT '创建时间',
+    `updated_time` datetime    DEFAULT NULL COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `key` (`key`),
+    KEY `ix_sys_config_id` (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+-- ----------------------------
+-- Table structure for sys_data_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_data_rule`;
+CREATE TABLE `sys_data_rule`
+(
+    `id`           int          NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `name`         varchar(255) NOT NULL COMMENT '规则名称',
+    `model`        varchar(50)  NOT NULL COMMENT 'SQLA 模型类',
+    `column`       varchar(20)  NOT NULL COMMENT '数据库字段',
+    `operator`     int          NOT NULL COMMENT '运算符（0：and、1：or）',
+    `expression`   int          NOT NULL COMMENT '表达式（0：>、1：>=、2：<、3：<=、4：==、5：!=、6：in、7：not_in）',
+    `value`        varchar(255) NOT NULL COMMENT '规则值',
+    `created_time` datetime     NOT NULL COMMENT '创建时间',
+    `updated_time` datetime DEFAULT NULL COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `name` (`name`),
+    KEY `ix_sys_data_rule_id` (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+-- ----------------------------
+-- Table structure for sys_dept
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_dept`;
 CREATE TABLE `sys_dept`
 (
     `id`           int         NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -48,14 +104,17 @@ CREATE TABLE `sys_dept`
     `created_time` datetime    NOT NULL COMMENT '创建时间',
     `updated_time` datetime    DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    KEY `ix_sys_dept_id` (`id`),
     KEY `ix_sys_dept_parent_id` (`parent_id`),
+    KEY `ix_sys_dept_id` (`id`),
     CONSTRAINT `sys_dept_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `sys_dept` (`id`) ON DELETE SET NULL
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_dict_data: table
+-- ----------------------------
+-- Table structure for sys_dict_data
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_dict_data`;
 CREATE TABLE `sys_dict_data`
 (
     `id`           int         NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -72,12 +131,15 @@ CREATE TABLE `sys_dict_data`
     UNIQUE KEY `value` (`value`),
     KEY `type_id` (`type_id`),
     KEY `ix_sys_dict_data_id` (`id`),
-    CONSTRAINT `sys_dict_data_ibfk_1` FOREIGN KEY (`type_id`) REFERENCES `sys_dict_type` (`id`)
+    CONSTRAINT `sys_dict_data_ibfk_1` FOREIGN KEY (`type_id`) REFERENCES `sys_dict_type` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_dict_type: table
+-- ----------------------------
+-- Table structure for sys_dict_type
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_dict_type`;
 CREATE TABLE `sys_dict_type`
 (
     `id`           int         NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -95,22 +157,25 @@ CREATE TABLE `sys_dict_type`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_gen_business: table
+-- ----------------------------
+-- Table structure for sys_gen_business
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_gen_business`;
 CREATE TABLE `sys_gen_business`
 (
-    `id`                   int          NOT NULL AUTO_INCREMENT COMMENT '主键id',
-    `app_name`             varchar(50)  NOT NULL COMMENT '应用名称（英文）',
-    `table_name_en`        varchar(255) NOT NULL COMMENT '表名称（英文）',
-    `table_name_zh`        varchar(255) NOT NULL COMMENT '表名称（中文）',
-    `table_simple_name_zh` varchar(255) NOT NULL COMMENT '表名称（中文简称）',
-    `table_comment`        varchar(255) DEFAULT NULL COMMENT '表描述',
-    `schema_name`          varchar(255) DEFAULT NULL COMMENT 'Schema 名称 (默认为英文表驼峰)',
-    `have_datetime_column` tinyint(1)   NOT NULL COMMENT '是否存在默认时间列',
-    `api_version`          varchar(20)  NOT NULL COMMENT '代码生成 api 版本，默认为 v1',
-    `gen_path`             varchar(255) DEFAULT NULL COMMENT '代码生成路径（默认为 app 根路径）',
-    `remark`               longtext COMMENT '备注',
-    `created_time`         datetime     NOT NULL COMMENT '创建时间',
-    `updated_time`         datetime     DEFAULT NULL COMMENT '更新时间',
+    `id`                      int          NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `app_name`                varchar(50)  NOT NULL COMMENT '应用名称（英文）',
+    `table_name_en`           varchar(255) NOT NULL COMMENT '表名称（英文）',
+    `table_name_zh`           varchar(255) NOT NULL COMMENT '表名称（中文）',
+    `table_simple_name_zh`    varchar(255) NOT NULL COMMENT '表名称（中文简称）',
+    `table_comment`           varchar(255) DEFAULT NULL COMMENT '表描述',
+    `schema_name`             varchar(255) DEFAULT NULL COMMENT 'Schema 名称 (默认为英文表名称)',
+    `default_datetime_column` tinyint(1)   NOT NULL COMMENT '是否存在默认时间列',
+    `api_version`             varchar(20)  NOT NULL COMMENT '代码生成 api 版本，默认为 v1',
+    `gen_path`                varchar(255) DEFAULT NULL COMMENT '代码生成路径（默认为 app 根路径）',
+    `remark`                  longtext COMMENT '备注',
+    `created_time`            datetime     NOT NULL COMMENT '创建时间',
+    `updated_time`            datetime     DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `table_name_en` (`table_name_en`),
     KEY `ix_sys_gen_business_id` (`id`)
@@ -118,14 +183,18 @@ CREATE TABLE `sys_gen_business`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_gen_model: table
+-- ----------------------------
+-- Table structure for sys_gen_model
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_gen_model`;
 CREATE TABLE `sys_gen_model`
 (
     `id`              int         NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `name`            varchar(50) NOT NULL COMMENT '列名称',
     `comment`         varchar(255) DEFAULT NULL COMMENT '列描述',
-    `type`            varchar(20) NOT NULL COMMENT '列类型',
-    `default`         varchar(50)  DEFAULT NULL COMMENT '列默认值',
+    `type`            varchar(20) NOT NULL COMMENT 'SQLA 模型列类型',
+    `pd_type`         varchar(20) NOT NULL COMMENT '列类型对应的 pydantic 类型',
+    `default`         longtext COMMENT '列默认值',
     `sort`            int          DEFAULT NULL COMMENT '列排序',
     `length`          int         NOT NULL COMMENT '列长度',
     `is_pk`           tinyint(1)  NOT NULL COMMENT '是否主键',
@@ -139,7 +208,10 @@ CREATE TABLE `sys_gen_model`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_login_log: table
+-- ----------------------------
+-- Table structure for sys_login_log
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_login_log`;
 CREATE TABLE `sys_login_log`
 (
     `id`           int          NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -163,7 +235,10 @@ CREATE TABLE `sys_login_log`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_menu: table
+-- ----------------------------
+-- Table structure for sys_menu
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_menu`;
 CREATE TABLE `sys_menu`
 (
     `id`           int         NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -191,10 +266,14 @@ CREATE TABLE `sys_menu`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_opera_log: table
+-- ----------------------------
+-- Table structure for sys_opera_log
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_opera_log`;
 CREATE TABLE `sys_opera_log`
 (
     `id`           int          NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `trace_id`     varchar(32)  NOT NULL COMMENT '请求跟踪 ID',
     `username`     varchar(20) DEFAULT NULL COMMENT '用户名',
     `method`       varchar(20)  NOT NULL COMMENT '请求类型',
     `title`        varchar(255) NOT NULL COMMENT '操作模块',
@@ -211,7 +290,7 @@ CREATE TABLE `sys_opera_log`
     `status`       int          NOT NULL COMMENT '操作状态（0异常 1正常）',
     `code`         varchar(20)  NOT NULL COMMENT '操作状态码',
     `msg`          longtext COMMENT '提示消息',
-    `cost_time`    float        NOT NULL COMMENT '请求耗时ms',
+    `cost_time`    float        NOT NULL COMMENT '请求耗时（ms）',
     `opera_time`   datetime     NOT NULL COMMENT '操作时间',
     `created_time` datetime     NOT NULL COMMENT '创建时间',
     PRIMARY KEY (`id`),
@@ -220,12 +299,15 @@ CREATE TABLE `sys_opera_log`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_role: table
+-- ----------------------------
+-- Table structure for sys_role
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_role`;
 CREATE TABLE `sys_role`
 (
     `id`           int         NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `name`         varchar(20) NOT NULL COMMENT '角色名称',
-    `data_scope`   int      DEFAULT NULL COMMENT '权限范围（1：全部数据权限 2：自定义数据权限）',
+    `data_scope`   int      DEFAULT NULL COMMENT '数据权限范围（0: 全部数据，1: 自定义数据，2: 所在部门及以下数据，3: 所在部门数据，4: 仅本人数据）',
     `status`       int         NOT NULL COMMENT '角色状态（0停用 1正常）',
     `remark`       longtext COMMENT '备注',
     `created_time` datetime    NOT NULL COMMENT '创建时间',
@@ -237,7 +319,29 @@ CREATE TABLE `sys_role`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_role_menu: table
+-- ----------------------------
+-- Table structure for sys_role_data_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_role_data_rule`;
+CREATE TABLE `sys_role_data_rule`
+(
+    `id`           int NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `role_id`      int NOT NULL COMMENT '角色ID',
+    `data_rule_id` int NOT NULL COMMENT '数据权限规则ID',
+    PRIMARY KEY (`id`, `role_id`, `data_rule_id`),
+    UNIQUE KEY `ix_sys_role_data_rule_id` (`id`),
+    KEY `role_id` (`role_id`),
+    KEY `data_rule_id` (`data_rule_id`),
+    CONSTRAINT `sys_role_data_rule_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `sys_role` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `sys_role_data_rule_ibfk_2` FOREIGN KEY (`data_rule_id`) REFERENCES `sys_data_rule` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+-- ----------------------------
+-- Table structure for sys_role_menu
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_role_menu`;
 CREATE TABLE `sys_role_menu`
 (
     `id`      int NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -253,32 +357,35 @@ CREATE TABLE `sys_role_menu`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_user: table
+-- ----------------------------
+-- Table structure for sys_user
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user`;
 CREATE TABLE `sys_user`
 (
     `id`              int         NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `uuid`            varchar(50) NOT NULL,
     `username`        varchar(20) NOT NULL COMMENT '用户名',
     `nickname`        varchar(20) NOT NULL COMMENT '昵称',
-    `password`        varchar(255) DEFAULT NULL COMMENT '密码',
-    `salt`            varchar(5)   DEFAULT NULL COMMENT '加密盐',
+    `password`        varchar(255)   DEFAULT NULL COMMENT '密码',
+    `salt`            varbinary(255) DEFAULT NULL COMMENT '加密盐',
     `email`           varchar(50) NOT NULL COMMENT '邮箱',
     `is_superuser`    tinyint(1)  NOT NULL COMMENT '超级权限(0否 1是)',
     `is_staff`        tinyint(1)  NOT NULL COMMENT '后台管理登陆(0否 1是)',
     `status`          int         NOT NULL COMMENT '用户账号状态(0停用 1正常)',
     `is_multi_login`  tinyint(1)  NOT NULL COMMENT '是否重复登陆(0否 1是)',
-    `avatar`          varchar(255) DEFAULT NULL COMMENT '头像',
-    `phone`           varchar(11)  DEFAULT NULL COMMENT '手机号',
+    `avatar`          varchar(255)   DEFAULT NULL COMMENT '头像',
+    `phone`           varchar(11)    DEFAULT NULL COMMENT '手机号',
     `join_time`       datetime    NOT NULL COMMENT '注册时间',
-    `last_login_time` datetime     DEFAULT NULL COMMENT '上次登录',
-    `dept_id`         int          DEFAULT NULL COMMENT '部门关联ID',
+    `last_login_time` datetime       DEFAULT NULL COMMENT '上次登录',
+    `dept_id`         int            DEFAULT NULL COMMENT '部门关联ID',
     `created_time`    datetime    NOT NULL COMMENT '创建时间',
-    `updated_time`    datetime     DEFAULT NULL COMMENT '更新时间',
+    `updated_time`    datetime       DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uuid` (`uuid`),
     UNIQUE KEY `nickname` (`nickname`),
-    UNIQUE KEY `ix_sys_user_email` (`email`),
     UNIQUE KEY `ix_sys_user_username` (`username`),
+    UNIQUE KEY `ix_sys_user_email` (`email`),
     KEY `dept_id` (`dept_id`),
     KEY `ix_sys_user_id` (`id`),
     CONSTRAINT `sys_user_ibfk_1` FOREIGN KEY (`dept_id`) REFERENCES `sys_dept` (`id`) ON DELETE SET NULL
@@ -286,7 +393,10 @@ CREATE TABLE `sys_user`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_user_role: table
+-- ----------------------------
+-- Table structure for sys_user_role
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user_role`;
 CREATE TABLE `sys_user_role`
 (
     `id`      int NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -302,7 +412,10 @@ CREATE TABLE `sys_user_role`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
--- sys_user_social: table
+-- ----------------------------
+-- Table structure for sys_user_social
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user_social`;
 CREATE TABLE `sys_user_social`
 (
     `id`           int         NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -322,3 +435,5 @@ CREATE TABLE `sys_user_social`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;

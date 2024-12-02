@@ -83,16 +83,16 @@ class MenuService:
             if obj.parent_id == menu.id:
                 raise errors.ForbiddenError(msg='禁止关联自身为父级')
             count = await menu_dao.update(db, pk, obj)
-            await redis_client.delete_prefix(settings.PERMISSION_REDIS_PREFIX)
             return count
 
     @staticmethod
-    async def delete(*, pk: int) -> int:
+    async def delete(*, request: Request, pk: int) -> int:
         async with async_db_session.begin() as db:
             children = await menu_dao.get_children(db, pk)
             if children:
                 raise errors.ForbiddenError(msg='菜单下存在子菜单，无法删除')
             count = await menu_dao.delete(db, pk)
+            await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{request.user.id}')
             return count
 
 
