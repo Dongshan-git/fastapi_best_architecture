@@ -1,34 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Annotated
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query
 
-from backend.app.admin.schema.dept import CreateDeptParam, GetDeptListDetails, UpdateDeptParam
+from backend.app.admin.schema.dept import CreateDeptParam, GetDeptDetail, UpdateDeptParam
 from backend.app.admin.service.dept_service import dept_service
-from backend.common.response.response_schema import ResponseModel, response_base
+from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
 from backend.common.security.permission import RequestPermission
 from backend.common.security.rbac import DependsRBAC
-from backend.utils.serializers import select_as_dict
 
 router = APIRouter()
 
 
 @router.get('/{pk}', summary='获取部门详情', dependencies=[DependsJwtAuth])
-async def get_dept(pk: Annotated[int, Path(...)]) -> ResponseModel:
-    dept = await dept_service.get(pk=pk)
-    data = GetDeptListDetails(**select_as_dict(dept))
+async def get_dept(pk: Annotated[int, Path(description='部门 ID')]) -> ResponseSchemaModel[GetDeptDetail]:
+    data = await dept_service.get(pk=pk)
     return response_base.success(data=data)
 
 
 @router.get('', summary='获取所有部门展示树', dependencies=[DependsJwtAuth])
-async def get_all_depts_tree(
-    name: Annotated[str | None, Query()] = None,
-    leader: Annotated[str | None, Query()] = None,
-    phone: Annotated[str | None, Query()] = None,
-    status: Annotated[int | None, Query()] = None,
-) -> ResponseModel:
+async def get_all_depts(
+    name: Annotated[str | None, Query(description='部门名称')] = None,
+    leader: Annotated[str | None, Query(description='部门负责人')] = None,
+    phone: Annotated[str | None, Query(description='联系电话')] = None,
+    status: Annotated[int | None, Query(description='状态')] = None,
+) -> ResponseSchemaModel[list[dict[str, Any]]]:
     dept = await dept_service.get_dept_tree(name=name, leader=leader, phone=phone, status=status)
     return response_base.success(data=dept)
 
@@ -54,7 +52,7 @@ async def create_dept(obj: CreateDeptParam) -> ResponseModel:
         DependsRBAC,
     ],
 )
-async def update_dept(pk: Annotated[int, Path(...)], obj: UpdateDeptParam) -> ResponseModel:
+async def update_dept(pk: Annotated[int, Path(description='部门 ID')], obj: UpdateDeptParam) -> ResponseModel:
     count = await dept_service.update(pk=pk, obj=obj)
     if count > 0:
         return response_base.success()
@@ -69,8 +67,8 @@ async def update_dept(pk: Annotated[int, Path(...)], obj: UpdateDeptParam) -> Re
         DependsRBAC,
     ],
 )
-async def delete_dept(request: Request, pk: Annotated[int, Path(...)]) -> ResponseModel:
-    count = await dept_service.delete(request=request, pk=pk)
+async def delete_dept(pk: Annotated[int, Path(description='部门 ID')]) -> ResponseModel:
+    count = await dept_service.delete(pk=pk)
     if count > 0:
         return response_base.success()
     return response_base.fail()

@@ -7,7 +7,12 @@ from backend.utils.serializers import RowData, select_list_serialize
 
 
 def get_tree_nodes(row: Sequence[RowData]) -> list[dict[str, Any]]:
-    """获取所有树形结构节点"""
+    """
+    获取所有树形结构节点
+
+    :param row: 原始数据行序列
+    :return:
+    """
     tree_nodes = select_list_serialize(row)
     tree_nodes.sort(key=lambda x: x['sort'])
     return tree_nodes
@@ -17,10 +22,10 @@ def traversal_to_tree(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     通过遍历算法构造树形结构
 
-    :param nodes:
+    :param nodes: 树节点列表
     :return:
     """
-    tree = []
+    tree: list[dict[str, Any]] = []
     node_dict = {node['id']: node for node in nodes}
 
     for node in nodes:
@@ -45,16 +50,16 @@ def recursive_to_tree(nodes: list[dict[str, Any]], *, parent_id: int | None = No
     """
     通过递归算法构造树形结构（性能影响较大）
 
-    :param nodes:
-    :param parent_id:
+    :param nodes: 树节点列表
+    :param parent_id: 父节点 ID，默认为 None 表示根节点
     :return:
     """
-    tree = []
+    tree: list[dict[str, Any]] = []
     for node in nodes:
         if node['parent_id'] == parent_id:
-            child_node = recursive_to_tree(nodes, parent_id=node['id'])
-            if child_node:
-                node['children'] = child_node
+            child_nodes = recursive_to_tree(nodes, parent_id=node['id'])
+            if child_nodes:
+                node['children'] = child_nodes
             tree.append(node)
     return tree
 
@@ -65,9 +70,9 @@ def get_tree_data(
     """
     获取树形结构数据
 
-    :param row:
-    :param build_type:
-    :param parent_id:
+    :param row: 原始数据行序列
+    :param build_type: 构建树形结构的算法类型，默认为遍历算法
+    :param parent_id: 父节点 ID，仅在递归算法中使用
     :return:
     """
     nodes = get_tree_nodes(row)
@@ -79,3 +84,31 @@ def get_tree_data(
         case _:
             raise ValueError(f'无效的算法类型：{build_type}')
     return tree
+
+
+def get_vben5_tree_data(row: Sequence[RowData]) -> list[dict[str, Any]]:
+    """
+    获取 vben5 菜单树形结构数据
+
+    :param row: 原始数据行序列
+    :return:
+    """
+    # 需要移除的原始字段
+    remove_keys = {'title', 'icon', 'link', 'cache', 'display', 'status'}
+
+    vben5_nodes = [
+        {
+            **{k: v for k, v in node.items() if k not in remove_keys},
+            'meta': {
+                'title': node['title'],
+                'icon': node['icon'],
+                'link': node['link'],
+                'keepAlive': node['cache'],
+                'hideInMenu': not bool(node['display']),
+                'menuVisibleWithForbidden': not bool(node['status']),
+            },
+        }
+        for node in get_tree_nodes(row)
+    ]
+
+    return traversal_to_tree(vben5_nodes)

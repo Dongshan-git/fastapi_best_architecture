@@ -1,37 +1,36 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 
-from backend.app.admin.schema.menu import CreateMenuParam, GetMenuListDetails, UpdateMenuParam
+from backend.app.admin.schema.menu import CreateMenuParam, GetMenuDetail, UpdateMenuParam
 from backend.app.admin.service.menu_service import menu_service
-from backend.common.response.response_schema import ResponseModel, response_base
+from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
 from backend.common.security.permission import RequestPermission
 from backend.common.security.rbac import DependsRBAC
-from backend.utils.serializers import select_as_dict
 
 router = APIRouter()
 
 
-@router.get('/sidebar', summary='获取用户菜单展示树', dependencies=[DependsJwtAuth])
-async def get_user_sidebar_tree(request: Request) -> ResponseModel:
+@router.get('/sidebar', summary='获取用户菜单侧边栏', description='适配 vben5', dependencies=[DependsJwtAuth])
+async def get_user_sidebar(request: Request) -> ResponseSchemaModel[list[dict[str, Any]]]:
     menu = await menu_service.get_user_menu_tree(request=request)
     return response_base.success(data=menu)
 
 
 @router.get('/{pk}', summary='获取菜单详情', dependencies=[DependsJwtAuth])
-async def get_menu(pk: Annotated[int, Path(...)]) -> ResponseModel:
-    menu = await menu_service.get(pk=pk)
-    data = GetMenuListDetails(**select_as_dict(menu))
+async def get_menu(pk: Annotated[int, Path(description='菜单 ID')]) -> ResponseSchemaModel[GetMenuDetail]:
+    data = await menu_service.get(pk=pk)
     return response_base.success(data=data)
 
 
 @router.get('', summary='获取所有菜单展示树', dependencies=[DependsJwtAuth])
 async def get_all_menus(
-    title: Annotated[str | None, Query()] = None, status: Annotated[int | None, Query()] = None
-) -> ResponseModel:
+    title: Annotated[str | None, Query(description='菜单标题')] = None,
+    status: Annotated[int | None, Query(description='状体')] = None,
+) -> ResponseSchemaModel[list[dict[str, Any]]]:
     menu = await menu_service.get_menu_tree(title=title, status=status)
     return response_base.success(data=menu)
 
@@ -57,7 +56,7 @@ async def create_menu(obj: CreateMenuParam) -> ResponseModel:
         DependsRBAC,
     ],
 )
-async def update_menu(pk: Annotated[int, Path(...)], obj: UpdateMenuParam) -> ResponseModel:
+async def update_menu(pk: Annotated[int, Path(description='菜单 ID')], obj: UpdateMenuParam) -> ResponseModel:
     count = await menu_service.update(pk=pk, obj=obj)
     if count > 0:
         return response_base.success()
@@ -72,8 +71,8 @@ async def update_menu(pk: Annotated[int, Path(...)], obj: UpdateMenuParam) -> Re
         DependsRBAC,
     ],
 )
-async def delete_menu(request: Request, pk: Annotated[int, Path(...)]) -> ResponseModel:
-    count = await menu_service.delete(request=request, pk=pk)
+async def delete_menu(pk: Annotated[int, Path(description='菜单 ID 列表')]) -> ResponseModel:
+    count = await menu_service.delete(pk=pk)
     if count > 0:
         return response_base.success()
     return response_base.fail()

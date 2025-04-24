@@ -8,17 +8,17 @@ from starlette.responses import RedirectResponse
 from backend.app.admin.conf import admin_settings
 from backend.app.admin.service.oauth2_service import oauth2_service
 from backend.common.enums import UserSocialType
-from backend.common.response.response_schema import ResponseModel, response_base
+from backend.common.response.response_schema import ResponseSchemaModel, response_base
 
 router = APIRouter()
 
 _github_client = GitHubOAuth20(admin_settings.OAUTH2_GITHUB_CLIENT_ID, admin_settings.OAUTH2_GITHUB_CLIENT_SECRET)
-_github_oauth2 = FastAPIOAuth20(_github_client, admin_settings.OAUTH2_GITHUB_REDIRECT_URI)
+_github_oauth2 = FastAPIOAuth20(_github_client, redirect_route_name='github_login')
 
 
 @router.get('', summary='获取 Github 授权链接')
-async def github_auth2() -> ResponseModel:
-    auth_url = await _github_client.get_authorization_url(redirect_uri=admin_settings.OAUTH2_GITHUB_REDIRECT_URI)
+async def github_oauth2(request: Request) -> ResponseSchemaModel[str]:
+    auth_url = await _github_client.get_authorization_url(redirect_uri=f'{request.url}/callback')
     return response_base.success(data=auth_url)
 
 

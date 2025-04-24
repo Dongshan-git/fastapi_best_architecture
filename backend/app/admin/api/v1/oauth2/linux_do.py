@@ -8,7 +8,7 @@ from starlette.responses import RedirectResponse
 from backend.app.admin.conf import admin_settings
 from backend.app.admin.service.oauth2_service import oauth2_service
 from backend.common.enums import UserSocialType
-from backend.common.response.response_schema import ResponseModel, response_base
+from backend.common.response.response_schema import ResponseSchemaModel, response_base
 
 router = APIRouter()
 
@@ -16,19 +16,19 @@ _linux_do_client = LinuxDoOAuth20(
     admin_settings.OAUTH2_LINUX_DO_CLIENT_ID,
     admin_settings.OAUTH2_LINUX_DO_CLIENT_SECRET,
 )
-_linux_do_oauth2 = FastAPIOAuth20(_linux_do_client, admin_settings.OAUTH2_LINUX_DO_REDIRECT_URI)
+_linux_do_oauth2 = FastAPIOAuth20(_linux_do_client, redirect_route_name='linux_do_login')
 
 
-@router.get('', summary='获取 Linux Do 授权链接')
-async def linux_do_auth2() -> ResponseModel:
-    auth_url = await _linux_do_client.get_authorization_url(redirect_uri=admin_settings.OAUTH2_LINUX_DO_REDIRECT_URI)
+@router.get('', summary='获取 LinuxDo 授权链接')
+async def linux_do_oauth2(request: Request) -> ResponseSchemaModel[str]:
+    auth_url = await _linux_do_client.get_authorization_url(redirect_uri=f'{request.url}/callback')
     return response_base.success(data=auth_url)
 
 
 @router.get(
     '/callback',
-    summary='Linux Do 授权自动重定向',
-    description='Linux Do 授权后，自动重定向到当前地址并获取用户信息，通过用户信息自动创建系统用户',
+    summary='LinuxDo 授权自动重定向',
+    description='LinuxDo 授权后，自动重定向到当前地址并获取用户信息，通过用户信息自动创建系统用户',
     dependencies=[Depends(RateLimiter(times=5, minutes=1))],
 )
 async def linux_do_login(
@@ -45,6 +45,6 @@ async def linux_do_login(
         response=response,
         background_tasks=background_tasks,
         user=user,
-        social=UserSocialType.linuxdo,
+        social=UserSocialType.linux_do,
     )
     return RedirectResponse(url=f'{admin_settings.OAUTH2_FRONTEND_REDIRECT_URI}?access_token={data.access_token}')

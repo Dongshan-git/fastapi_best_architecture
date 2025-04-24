@@ -1,64 +1,68 @@
-# FBA Project - Backend
+# FastAPI Best Architecture - Backend
 
 ## Docker
-
-> [!IMPORTANT]
-> Due to Docker context limitations, you can't build an image in this directory
 
 1. Make sure you're at the root of the project
 2. Run the following Docker command to build container:
 
    ```shell
-   docker build -f backend/backend.dockerfile -t fba_backend_independent .
+   docker build -f Dockerfile -t fba_backend_independent .
    ```
 
 3. Start container
 
+   Native boot needs to change `127.0.0.1` in `.env` to `host.docker.internal`
+
    ```shell
-   docker run -d fba_backend_independent -p 8000:8000 --name fba_app
+   docker run -d -p 8000:8000 --name fba_server fba_backend_independent
    ```
 
 ## Contributing
 
 1. Prerequisites
 
-   You'll need the following prerequisites:
-    - Any python version between Python >= 3.10
+    - Python >= 3.10
     - Git
     - [uv](https://docs.astral.sh/uv/getting-started/installation/)
-    - Fork this repository to your GitHub account  
+    - Fork this repository to your GitHub account
 
 2. Installation and setup
 
-   Clone your fork and cd into the repo directory
+   Clone your forked repository:
 
    ```shell
-   git clone https://github.com/<your username>/fastapi_best_architecture.git
-   
-   cd fastapi_best_architecture/backend
-   
-   uv venv
-   
-   uv pip install -r requirements.txt
+   git clone https://github.com/<your account>/fastapi_best_architecture.git
    ```
 
-3. Checkout a new branch and make your changes
+   Go to the root directory of the project, open the terminal, and run the following command:
+
+   ```sh
+   uv sync --frozen
+   ```
+
+3. Checkout
+
+   Checkout a new branch and make your changes
 
    ```shell
-   # Checkout a new branch and make your changes
    git checkout -b your-new-feature-branch
    ```
 
-4. Run linting
+4. Format and Lint
+
+   Auto-formatting and lint via `pre-commit`
 
    ```shell
-   # Run automated code formatting and linting
    pre-commit run --all-files
    ```
 
-5. Commit and push your changes
+5. Commit and push
 
-   Commit your changes, push your branch to GitHub, and create a pull request.
+   Commit your changes and push your branch to the GitHub.
+
+6. PR
+
+   Create a PR via GitHub
 
 ## Scripts
 

@@ -6,19 +6,19 @@
 
 English | [简体中文](./README.zh-CN.md)
 
-A backend and frontend separation solution based on the FastAPI framework, following
-the [pseudo three-tier architecture](#pseudo-three-tier-architecture) design, supporting **Python 3.10** and above
-versions
+Enterprise-level backend architecture solution
 
 **🔥Continuously updated and maintained🔥**
 
 [![GitHub](https://img.shields.io/github/license/fastapi-practices/fastapi_best_architecture)](https://github.com/fastapi-practices/fastapi_best_architecture/blob/master/LICENSE)
-[![Static Badge](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
-![Static Badge](https://img.shields.io/badge/MySQL-8.0%2B-%2300758f)
-![Static Badge](https://img.shields.io/badge/SQLAlchemy-2.0-%23778877)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+![MySQL](https://img.shields.io/badge/MySQL-8.0%2B-%2300758f)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.0%2B-%23336791)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-%23778877)
 [![Pydantic v2](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v2.json)](https://pydantic.dev)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+![Docker](https://img.shields.io/badge/Docker-%232496ED?logo=docker&logoColor=white)
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.com/invite/yNN3wTbVAC)
 ![Discord](https://img.shields.io/discord/1185035164577972344)
 
@@ -27,12 +27,12 @@ versions
 > [!NOTE]
 > This repository as a template library open to any person or enterprise can be used for free!
 
-## Pseudo three-tier architecture
+## Pseudo 3-tier architecture
 
-The mvc architecture is a common design pattern in python web, but the three-tier architecture is even more fascinating
+The mvc architecture is a common design pattern in python web, but the 3-tier architecture is even more fascinating
 
-In python web development, there is no common standard for the concept of three-tier architecture, so we'll call it a
-pseudo three-tier architecture here
+In python web development, there is no common standard for the concept of 3-tier architecture, so we'll call it a
+pseudo 3-tier architecture here
 
 But please note that we don't have a traditional multi-app structure (django, springBoot...) If you don't like this
 pattern, use templates to transform it to your heart's content!
@@ -45,47 +45,41 @@ pattern, use templates to transform it to your heart's content!
 | data access    | dao / mapper   | crud                      |
 | model          | model / entity | model                     |
 
-## Online Demo
-
-You can view some of the preview screenshots
-in [fastapi_best_architecture_ui](https://github.com/fastapi-practices/fastapi_best_architecture_ui)
-
-For the demo entrance, please refer
-to [Official documentation](https://fastapi-practices.github.io/fastapi_best_architecture_docs/)
-
-> tester: test / 123456
->
-> super: admin / 123456
-
 ## Features
 
-- [x] Design with FastAPI PEP 593 Annotated Parameters
-- [x] Global asynchronous design with async/await + asgiref
-- [x] Follows Restful API specification
-- [x] Global SQLAlchemy 2.0 syntax
-- [x] Pydantic v1 and v2 (different branches)
-- [x] Casbin RBAC access control model
-- [x] Role menu RBAC access control model
-- [x] Celery asynchronous tasks
-- [x] JWT middleware whitelist authentication
-- [x] Global customizable time zone time
-- [x] Docker / Docker-compose deployment
-- [x] Pytest Unit Testing
+- [x] Global FastAPI PEP 593 Annotated parameter style
+- [x] Comprehensive async/await + asgiref asynchronous design
+- [x] Adheres to RESTful API specifications
+- [x] Uses SQLAlchemy 2.0 with new syntax
+- [x] Uses Pydantic v2 version
+- [x] Implements role-menu RBAC access control
+- [x] Integrates Casbin RBAC access control
+- [x] Supports Celery asynchronous tasks
+- [x] Custom-developed JWT authentication middleware
+- [x] Supports global custom time zones
+- [x] Supports Docker / Docker-compose deployment
+- [x] Integrates Pytest unit testing
 
-## Built-in features
+## Built-in Functions
 
-- [x] User management: management of system user roles, assignment of permissions
-- [x] Departmental management: Configuration of the system organization (company, department, group, ...)
-- [x] Menu management: Configuration of system menus, user menus, button permission labels
-- [x] Role management: assignment of role menu privileges, assignment of role routing privileges
-- [x] Dictionary management: maintenance of commonly used fixed data or parameters within the system
-- [x] Code generation: back-end code is automatically generated, supporting preview, write and download.
-- [x] Operation log: logging and querying of normal and abnormal system operations.
-- [x] Login authentication: graphical captcha backend authentication login
-- [x] Logging: logging and querying of normal and abnormal user logins
-- [x] Service monitoring: server hardware device information and status
-- [x] Timed tasks: automated tasks, asynchronous tasks, support for function calls
-- [x] Interface Documentation: Automatically generate online interactive API interface documentation.
+- [x] User Management: Assign roles and permissions
+- [x] Department Management: Configure organizational structure (company, department, team, etc.)
+- [x] Menu Management: Set up menus and button-level permissions
+- [x] Role Management: Configure roles, assign menus and permissions
+- [x] Dictionary Management: Maintain common parameters and configurations
+- [x] Parameter Management: Dynamically configure commonly used system parameters
+- [x] Notification Announcements: Publish and maintain system notification and announcement information
+- [x] Token Management: Detect online status, support forced logout
+- [x] Multi-device Login: Support one-click switching between multi-device login modes
+- [x] OAuth 2.0: Built-in custom-developed OAuth 2.0 authorization login
+- [x] Plugin System: Hot-swappable plugin design to reduce coupling
+- [x] Scheduled Tasks: Support scheduled, asynchronous tasks, and function calls
+- [x] Code Generation: Automatically generate code with preview, write, and download support
+- [x] Operation Logs: Record and query normal and abnormal operations
+- [x] Login Logs: Record and query normal and abnormal logins
+- [x] Cache Monitoring: Query system cache information and command statistics
+- [x] Service Monitoring: View server hardware information and status
+- [x] API Documentation: Automatically generate online interactive API documentation
 
 ## Development and deployment
 
@@ -109,7 +103,7 @@ the [official documentation](https://fastapi-practices.github.io/fastapi_best_ar
 
 ## Interactivity
 
-[TG / Discord](https://wu-clan.github.io/homepage/)
+[Discord](https://wu-clan.github.io/homepage/)
 
 ## Sponsor us
 

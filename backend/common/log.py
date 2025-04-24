@@ -3,8 +3,7 @@
 import inspect
 import logging
 import os
-
-from sys import stderr, stdout
+import sys
 
 from asgi_correlation_id import correlation_id
 from loguru import logger
@@ -15,18 +14,19 @@ from backend.core.conf import settings
 
 class InterceptHandler(logging.Handler):
     """
-    Default handler from examples in loguru documentation.
-    See https://loguru.readthedocs.io/en/stable/overview.html#entirely-compatible-with-standard-logging
+    日志拦截处理器，用于将标准库的日志重定向到 loguru
+
+    参考：https://loguru.readthedocs.io/en/stable/overview.html#entirely-compatible-with-standard-logging
     """
 
     def emit(self, record: logging.LogRecord):
-        # Get corresponding Loguru level if it exists
+        # 获取对应的 Loguru 级别（如果存在）
         try:
             level = logger.level(record.levelname).name
         except ValueError:
             level = record.levelno
 
-        # Find caller from where originated the logged message.
+        # 查找记录日志消息的调用者
         frame, depth = inspect.currentframe(), 0
         while frame and (depth == 0 or frame.f_code.co_filename == logging.__file__):
             frame = frame.f_back
@@ -35,16 +35,19 @@ class InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
-def setup_logging():
+def setup_logging() -> None:
     """
-    From https://pawamoy.github.io/posts/unify-logging-for-a-gunicorn-uvicorn-app/
-    https://github.com/pawamoy/pawamoy.github.io/issues/17
-    """
-    # Intercept everything at the root logger
-    logging.root.handlers = [InterceptHandler()]
-    logging.root.setLevel(settings.LOG_ROOT_LEVEL)
+    设置日志处理器
 
-    # Remove all log handlers and propagate to root logger
+    参考：
+    - https://github.com/benoitc/gunicorn/issues/1572#issuecomment-638391953
+    - https://github.com/pawamoy/pawamoy.github.io/issues/17
+    """
+    # 设置根日志处理器和级别
+    logging.root.handlers = [InterceptHandler()]
+    logging.root.setLevel(settings.LOG_STD_LEVEL)
+
+    # 配置日志传播规则
     for name in logging.root.manager.loggerDict.keys():
         logging.getLogger(name).handlers = []
         if 'uvicorn.access' in name or 'watchfiles.main' in name:
@@ -55,71 +58,67 @@ def setup_logging():
         # Debug log handlers
         # logging.debug(f'{logging.getLogger(name)}, {logging.getLogger(name).propagate}')
 
-    # Remove every other logger's handlers
-    logger.remove()
-
-    # Define the correlation_id filter function
-    # https://github.com/snok/asgi-correlation-id?tab=readme-ov-file#configure-logging
+    # 定义 correlation_id 默认过滤函数
     # https://github.com/snok/asgi-correlation-id/issues/7
-    def correlation_id_filter(record) -> bool:
+    def correlation_id_filter(record):
         cid = correlation_id.get(settings.LOG_CID_DEFAULT_VALUE)
         record['correlation_id'] = cid[: settings.LOG_CID_UUID_LENGTH]
-        return True
+        return record
 
-    # Configure loguru logger before starts logging
+    # 配置 loguru 处理器
+    logger.remove()  # 移除默认处理器
     logger.configure(
         handlers=[
             {
-                'sink': stdout,
-                'level': settings.LOG_STDOUT_LEVEL,
-                'filter': lambda record: correlation_id_filter(record) and record['level'].no <= 25,
+                'sink': sys.stdout,
+                'level': settings.LOG_STD_LEVEL,
+                'filter': lambda record: correlation_id_filter(record),
                 'format': settings.LOG_STD_FORMAT,
-            },
-            {
-                'sink': stderr,
-                'level': settings.LOG_STDERR_LEVEL,
-                'filter': lambda record: correlation_id_filter(record) and record['level'].no >= 30,
-                'format': settings.LOG_STD_FORMAT,
-            },
+            }
         ]
     )
 
 
-def set_customize_logfile():
+def set_custom_logfile() -> None:
+    """设置自定义日志文件"""
     log_path = path_conf.LOG_DIR
     if not os.path.exists(log_path):
         os.mkdir(log_path)
 
-    # log files
-    log_stdout_file = os.path.join(log_path, settings.LOG_STDOUT_FILENAME)
-    log_stderr_file = os.path.join(log_path, settings.LOG_STDERR_FILENAME)
+    # 日志文件
+    log_access_file = os.path.join(log_path, settings.LOG_ACCESS_FILENAME)
+    log_error_file = os.path.join(log_path, settings.LOG_ERROR_FILENAME)
 
-    # loguru logger: https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.add
+    # 日志文件通用配置
+    # https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.add
     log_config = {
-        'rotation': '10 MB',
-        'retention': '15 days',
-        'compression': 'tar.gz',
-        'enqueue': True,
         'format': settings.LOG_FILE_FORMAT,
+        'enqueue': True,
+        'rotation': '5 MB',
+        'retention': '7 days',
+        'compression': 'tar.gz',
     }
 
-    # stdout file
+    # 标准输出文件
     logger.add(
-        str(log_stdout_file),
-        level=settings.LOG_STDOUT_LEVEL,
-        **log_config,
+        str(log_access_file),
+        level=settings.LOG_ACCESS_FILE_LEVEL,
+        filter=lambda record: record['level'].no <= 25,
         backtrace=False,
         diagnose=False,
+        **log_config,
     )
 
-    # stderr file
+    # 标准错误文件
     logger.add(
-        str(log_stderr_file),
-        level=settings.LOG_STDERR_LEVEL,
-        **log_config,
+        str(log_error_file),
+        level=settings.LOG_ERROR_FILE_LEVEL,
+        filter=lambda record: record['level'].no >= 30,
         backtrace=True,
         diagnose=True,
+        **log_config,
     )
 
 
+# 创建 logger 实例
 log = logger

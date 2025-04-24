@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.admin.model.m2m import sys_role_data_rule
 from backend.common.model import Base, id_key
 
+if TYPE_CHECKING:
+    from backend.app.admin.model import Role
+
 
 class DataRule(Base):
-    """数据权限规则表"""
+    """数据规则表"""
 
     __tablename__ = 'sys_data_rule'
 
@@ -18,9 +25,9 @@ class DataRule(Base):
     column: Mapped[str] = mapped_column(String(20), comment='数据库字段')
     operator: Mapped[int] = mapped_column(comment='运算符（0：and、1：or）')
     expression: Mapped[int] = mapped_column(
-        comment='表达式（0：>、1：>=、2：<、3：<=、4：==、5：!=、6：in、7：not_in）'
+        comment='表达式（0：==、1：!=、2：>、3：>=、4：<、5：<=、6：in、7：not_in）'
     )
     value: Mapped[str] = mapped_column(String(255), comment='规则值')
 
     # 角色规则多对多
-    roles: Mapped[list['Role']] = relationship(init=False, secondary=sys_role_data_rule, back_populates='rules')  # noqa: F821
+    roles: Mapped[list[Role]] = relationship(init=False, secondary=sys_role_data_rule, back_populates='rules')
